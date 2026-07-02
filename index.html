@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Protocol Submission</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #2c3e50; }
+        input[type="text"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        textarea { height: 70px; resize: vertical; }
+        button { width: 100%; padding: 15px; background-color: #0056b3; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:disabled { background-color: #cccccc; }
+        #status { margin-top: 15px; text-align: center; font-weight: bold; color: green; }
+        .help-text { font-size: 12px; color: #7f8c8d; margin-top: 2px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Group Protocol Draft</h2>
+        <form id="protocolForm">
+            
+            <div class="form-group">
+                <label>Group Number / Name</label>
+                <input type="text" id="group" placeholder="e.g., Group 1 or Table 3" required>
+            </div>
+
+            <div class="form-group">
+                <label>Modified Study Title</label>
+                <textarea id="title" placeholder="Enter your refined study title..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Primary Research Question</label>
+                <span class="help-text">Use the PICO format.</span>
+                <textarea id="rq" placeholder="What is the exact question you are answering?" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Objective 1 (Primary)</label>
+                <span class="help-text">Start with an action verb (e.g., To estimate, To compare)</span>
+                <input type="text" id="obj1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Objective 2 (Secondary)</label>
+                <input type="text" id="obj2" required>
+            </div>
+
+            <div class="form-group">
+                <label>Objective 3 (Secondary)</label>
+                <span class="help-text">Leave blank if not applicable</span>
+                <input type="text" id="obj3">
+            </div>
+
+            <button type="submit" id="submitBtn">Submit to Dashboard</button>
+        </form>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // PASTE YOUR NEW GOOGLE APPS SCRIPT URL HERE
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyGxWtQEvNsbsiF9o5qeUHXKe-I7n-gvI4h15R0NgQ87DgAPs_3FfMzUmyBlf4WImIc/exec'; 
+        
+        const form = document.getElementById('protocolForm');
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            btn.disabled = true;
+            btn.innerText = "Transmitting to Projector...";
+            
+            let formData = new FormData();
+            formData.append('group', document.getElementById('group').value);
+            formData.append('title', document.getElementById('title').value);
+            formData.append('rq', document.getElementById('rq').value);
+            formData.append('obj1', document.getElementById('obj1').value);
+            formData.append('obj2', document.getElementById('obj2').value);
+            formData.append('obj3', document.getElementById('obj3').value);
+
+            fetch(scriptURL, { method: 'POST', body: formData })
+                .then(response => {
+                    status.innerText = "Success! Look at the main screen.";
+                    form.reset();
+                    btn.disabled = false;
+                    btn.innerText = "Submit Another Revision";
+                    setTimeout(() => status.innerText = "", 5000);
+                })
+                .catch(error => {
+                    status.innerText = "Connection error. Try again.";
+                    status.style.color = "red";
+                    btn.disabled = false;
+                    btn.innerText = "Submit to Dashboard";
+                });
+        });
+    </script>
+</body>
+</html>
