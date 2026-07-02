@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Protocol Review Board</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e272e; color: #d2dae2; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar for QR Code */
+        .sidebar { width: 300px; background-color: #2b3e50; padding: 25px; display: flex; flex-direction: column; align-items: center; border-right: 3px solid #3c6382; box-shadow: 3px 0 15px rgba(0,0,0,0.4); z-index: 10; }
+        .sidebar h2 { color: #f5f6fa; font-size: 22px; margin-bottom: 10px; text-align: center; }
+        .sidebar p { color: #dcdde1; font-size: 15px; margin-bottom: 30px; text-align: center; line-height: 1.4; }
+        .sidebar img { width: 220px; height: 220px; background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .pulse { animation: pulse 2s infinite; color: #44bd32; font-weight: bold; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Main Dashboard Area */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; background-color: #1e272e; }
+        h1 { text-align: center; color: #f5f6fa; margin-top: 0; margin-bottom: 30px; border-bottom: 2px solid #3c6382; padding-bottom: 10px; }
+        
+        /* Protocol Cards Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 25px; align-items: start; }
+        .card { background: #2f3640; border-radius: 8px; box-shadow: 0 6px 12px rgba(0,0,0,0.3); border-left: 5px solid #00a8ff; display: flex; flex-direction: column; }
+        
+        /* Card Internal Styling */
+        .card-header { background: #353b48; padding: 15px 20px; border-top-left-radius: 8px; border-top-right-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #4a5460; }
+        .group-badge { background: #00a8ff; color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; }
+        .timestamp { font-size: 12px; color: #7f8fa6; }
+        
+        .card-body { padding: 20px; }
+        .section-title { font-size: 12px; text-transform: uppercase; color: #7f8fa6; letter-spacing: 1px; margin-bottom: 5px; margin-top: 15px; font-weight: bold; }
+        .card-body h3 { margin: 0 0 10px 0; font-size: 18px; color: #f5f6fa; line-height: 1.3; }
+        .card-body p.rq-text { font-size: 16px; font-style: italic; color: #dcdde1; background: #222f3e; padding: 10px; border-radius: 4px; margin: 0; border-left: 3px solid #4cd137; }
+        
+        ul.obj-list { list-style-type: none; padding: 0; margin: 0; }
+        ul.obj-list li { background: #353b48; margin-bottom: 8px; padding: 10px 15px; border-radius: 4px; font-size: 15px; display: flex; align-items: flex-start; }
+        ul.obj-list li::before { content: "•"; color: #00a8ff; font-weight: bold; display: inline-block; width: 1em; margin-left: -1em; }
+
+        /* SMART Verb Highlight Classes */
+        .bad-verb { color: #e84118; font-weight: bold; text-decoration: underline; background: rgba(232, 65, 24, 0.1); padding: 0 3px; border-radius: 3px; }
+        .good-verb { color: #4cd137; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Group Activity</h2>
+        <p>Scan the code to submit your group's Title, Research Question, and Objectives.</p>
+        
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://aravindbm.github.io/group-activity-research-q/" alt="QR Code">
+        
+        <p class="pulse">● Live Updating...</p>
+    </div>
+
+    <div class="main-content">
+        <h1>Live Protocol Review Board</h1>
+        <div class="grid" id="dashboard">Waiting for group submissions...</div>
+    </div>
+
+    <script>
+        // REPLACE WITH YOUR NEW GOOGLE APPS SCRIPT URL
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbyGxWtQEvNsbsiF9o5qeUHXKe-I7n-gvI4h15R0NgQ87DgAPs_3FfMzUmyBlf4WImIc/exec'; 
+        
+        // Automated SMART verb feedback dictionary
+        const badVerbs = ['understand', 'know', 'appreciate', 'study', 'see', 'check', 'explore', 'believe', 'prove'];
+        const goodVerbs = ['determine', 'compare', 'calculate', 'estimate', 'assess', 'identify', 'quantify', 'measure'];
+
+        function analyzeText(text) {
+            if (!text) return "";
+            let processedText = text;
+            
+            badVerbs.forEach(verb => {
+                const regex = new RegExp(`\\b${verb}\\b`, 'gi');
+                processedText = processedText.replace(regex, `<span class="bad-verb">$& (Avoid)</span>`);
+            });
+
+            goodVerbs.forEach(verb => {
+                const regex = new RegExp(`\\b${verb}\\b`, 'gi');
+                processedText = processedText.replace(regex, `<span class="good-verb">$& (Measurable)</span>`);
+            });
+
+            return processedText;
+        }
+
+        function fetchData() {
+            fetch(scriptURL)
+                .then(response => response.json())
+                .then(data => {
+                    const dashboard = document.getElementById('dashboard');
+                    dashboard.innerHTML = '';
+                    
+                    data.forEach(item => {
+                        const timeString = new Date(item.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        // Process the objectives through the SMART filter
+                        const obj1HTML = item.obj1 ? `<li>${analyzeText(item.obj1)}</li>` : '';
+                        const obj2HTML = item.obj2 ? `<li>${analyzeText(item.obj2)}</li>` : '';
+                        const obj3HTML = item.obj3 ? `<li>${analyzeText(item.obj3)}</li>` : '';
+                        
+                        const cardHTML = `
+                            <div class="card">
+                                <div class="card-header">
+                                    <span class="group-badge">${item.group}</span>
+                                    <span class="timestamp">${timeString}</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="section-title">Modified Title</div>
+                                    <h3>${item.title}</h3>
+                                    
+                                    <div class="section-title">Research Question</div>
+                                    <p class="rq-text">${item.rq}</p>
+                                    
+                                    <div class="section-title">SMART Objectives</div>
+                                    <ul class="obj-list">
+                                        ${obj1HTML}
+                                        ${obj2HTML}
+                                        ${obj3HTML}
+                                    </ul>
+                                </div>
+                            </div>
+                        `;
+                        dashboard.innerHTML += cardHTML;
+                    });
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        fetchData();
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>
